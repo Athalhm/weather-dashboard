@@ -1,12 +1,27 @@
-import { cities, searchCities } from './lib/cities'
-
-console.log('Total kota:', cities.length)
-console.log('5 pertama:', cities.slice(0, 5))
-console.log('Cari bandung:', searchCities('bandung'))
-console.log('Makassar:', searchCities('makassar'))
-console.log('Ada Merak?', cities.some((c) => c.name.includes('Merak')))
-console.log('Provinsi unik:', [...new Set(cities.map((c) => c.province))])
+import { useEffect } from 'react'
+import { fetchForecast } from './api/forecast'
+import { searchCities } from './lib/cities'
 
 export default function App() {
+  useEffect(() => {
+    const controller = new AbortController()
+    const bandung = searchCities('kota bandung')[0]
+    const jayapura = searchCities('kota jayapura')[0]
+
+    fetchForecast(bandung.lat, bandung.lon, controller.signal)
+      .then((data) => console.log('Bandung:', data))
+      .catch((err) => {
+        if (err.name !== 'AbortError') console.error(err)
+      })
+
+    fetchForecast(jayapura.lat, jayapura.lon, controller.signal)
+      .then((data) => console.log('Jayapura:', data))
+      .catch((err) => {
+        if (err.name !== 'AbortError') console.error(err)
+      })
+
+    return () => controller.abort()
+  }, [])
+
   return <div className="p-4">Cek console (F12)</div>
 }
