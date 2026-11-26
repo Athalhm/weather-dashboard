@@ -1,27 +1,39 @@
-import { useEffect } from 'react'
-import { fetchForecast } from './api/forecast'
-import { searchCities } from './lib/cities'
+import { useState } from 'react'
+import { useForecast } from '@/hooks/useForecast'
+import { searchCities, type City } from '@/lib/cities'
+import { Button } from '@/components/ui/button'
+
+const bandung = searchCities('kota bandung')[0]
+const jayapura = searchCities('kota jayapura')[0]
 
 export default function App() {
-  useEffect(() => {
-    const controller = new AbortController()
-    const bandung = searchCities('kota bandung')[0]
-    const jayapura = searchCities('kota jayapura')[0]
+  const [city, setCity] = useState<City | null>(null)
+  const { data, isPending, isFetching, isError, error, refetch } = useForecast(city)
 
-    fetchForecast(bandung.lat, bandung.lon, controller.signal)
-      .then((data) => console.log('Bandung:', data))
-      .catch((err) => {
-        if (err.name !== 'AbortError') console.error(err)
-      })
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex gap-2">
+        <Button onClick={() => setCity(bandung)}>Bandung</Button>
+        <Button onClick={() => setCity(jayapura)}>Jayapura</Button>
+        <Button variant="outline" onClick={() => setCity(null)}>Kosongkan</Button>
+      </div>
 
-    fetchForecast(jayapura.lat, jayapura.lon, controller.signal)
-      .then((data) => console.log('Jayapura:', data))
-      .catch((err) => {
-        if (err.name !== 'AbortError') console.error(err)
-      })
+      <p>Kota: {city?.name ?? '(belum dipilih)'} | fetching: {String(isFetching)}</p>
 
-    return () => controller.abort()
-  }, [])
-
-  return <div className="p-4">Cek console (F12)</div>
+      {city === null ? (
+        <p>Pilih kota dulu</p>
+      ) : isPending ? (
+        <p>Memuat...</p>
+      ) : isError ? (
+        <div>
+          <p className="text-red-600">Error: {error.message}</p>
+          <Button onClick={() => refetch()}>Coba lagi</Button>
+        </div>
+      ) : (
+        <pre className="text-xs overflow-auto max-h-96 bg-muted p-2 rounded">
+          {JSON.stringify(data.current, null, 2)}
+        </pre>
+      )}
+    </div>
+  )
 }
